@@ -28,15 +28,28 @@ void Warning(void);
 
 void main(void)
 {
-  ConfigWDT();
-  ConfigClocks();
-  ConfigLEDs();
-  ConfigADC10();
-  ConfigTimerA2();
-  ConfigUART();
-  _BIS_SR(LPM3_bits + GIE);
+	
+	ConfigWDT();
+	ConfigClocks();
+	ConfigLEDs();
+	ConfigADC10();
+	ConfigTimerA2();
+	ConfigUART();
+	Print_UART("This is gaimande\n\r");
+	begin:	
+	_BIS_SR(LPM3_bits + GIE);
   
-  Print_UART("This is gaimande\n\r");
+  while(P1IN & BIT5)							// Keep warning til Gas dose not appear
+	{
+		P2OUT |= BIT0;							// Buzzer is ON
+		__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
+		P2OUT &= ~BIT0;							// Buzzer is OFF
+		__delay_cycles(10000);					// Delay 80ms
+	}	
+
+	goto begin;
+	
+  
   while(1)
   {
    P1OUT |= BIT0;
@@ -74,8 +87,8 @@ void ConfigLEDs(void)
   P1SEL = TXD + RXD;						// P1.1 & 2 TA0, rest GPIO
   P1SEL2 = TXD + RXD;						// P1.1 & 2 TA0, rest GPIO
 
-  P1DIR = ~(BIT3 + BIT5 + RXD);				// P1.3 input, other outputs
-  P1REN |= BIT5;                            // P1.5 pull-up resistor enable
+  P1DIR = ~(BIT0 + BIT5 + RXD);				// P1.3 input, other outputs
+  P1REN |= BIT0 + BIT5;                     // P1.5 pull-up resistor enable
   P1IE |= BIT5;                             // Enable P1.5 interrupt
   P1IES &= ~BIT5;                           // Low to High transition
   P1IFG &= ~BIT5;                           // Clear interrupt Flag
@@ -87,7 +100,8 @@ void ConfigLEDs(void)
 
 void ConfigADC10(void)
  {
-  ADC10CTL1 = INCH_10 + ADC10DIV_0;        // Temp Sensor ADC10CLK
+  ADC10CTL1 = INCH_0 + ADC10DIV_0;        	// INCH_0 selects the analog chanel A0
+											// ADC10DIV_0 selects divide-by-1 as the ADC10 clock 
  }
 
 void ConfigTimerA2(void)
@@ -100,13 +114,14 @@ void ConfigTimerA2(void)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void)
 {
-  ADC10CTL0 = SREF_1 + ADC10SHT_3 + REFON + ADC10ON;
-  __delay_cycles(5);                         // Wait for ADC Ref to settle
+  ADC10CTL0 = SREF_0 + ADC10SHT_3 + ADC10ON;	// SREF_0: selects the range from Vss to Vcc
+												// ADC10SHT_3: maximum sample-and-hold time
+												// ADC10ON: turns on the ADC10 peripheral
   ADC10CTL0 |= ENC + ADC10SC;               // Sampling and conversion start
   P1OUT |= BIT6; 			                // P1.6 on (green LED)
   __delay_cycles(100);
   ADC10CTL0 &= ~ENC;				   		// Disable ADC conversion
-  ADC10CTL0 &= ~(REFON + ADC10ON);        	// Ref and ADC10 off
+  ADC10CTL0 &= ~ADC10ON;		        	// ADC10 off
   tempRaw = ADC10MEM;						// Read conversion value
   P1OUT ^= BIT6; 				                // green LED off
 }
@@ -120,6 +135,7 @@ __interrupt void USCI0RX_ISR(void)
 #pragma vector=PORT1_VECTOR
 __interrupt void PORT1_ISR(void)
 {    
+	/*
 	while(P1IN & BIT5)							// Keep warning til Gas dose not appear
 	{
 		P2OUT |= BIT0;							// Buzzer is ON
@@ -127,5 +143,7 @@ __interrupt void PORT1_ISR(void)
 		P2OUT &= ~BIT0;							// Buzzer is OFF
 		__delay_cycles(10000);					// Delay 80ms
 	}	
+	*/
 	P1IFG &= ~BIT5;         					// Clear interrupt Flag for next warn
+	_BIC_SR_IRQ(LPM3_bits);
 }
