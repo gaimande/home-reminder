@@ -51,6 +51,36 @@ void main(void)
 			P2OUT &= ~BIT0;							// Buzzer is OFF
 			__delay_cycles(10000);					// Delay 80ms
 			
+			P2OUT |= BIT0;							// Buzzer is ON
+			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			P2OUT &= ~BIT0;							// Buzzer is OFF
+			__delay_cycles(10000);					// Delay 80ms
+			
+			P2OUT |= BIT0;							// Buzzer is ON
+			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			P2OUT &= ~BIT0;							// Buzzer is OFF
+			__delay_cycles(10000);					// Delay 80ms
+			
+			P2OUT |= BIT0;							// Buzzer is ON
+			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			P2OUT &= ~BIT0;							// Buzzer is OFF
+			__delay_cycles(10000);					// Delay 80ms
+			
+			P2OUT |= BIT0;							// Buzzer is ON
+			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			P2OUT &= ~BIT0;							// Buzzer is OFF
+			__delay_cycles(30000);					// Delay 80ms
+			
+			P2OUT |= BIT0;							// Buzzer is ON
+			__delay_cycles(8000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			P2OUT &= ~BIT0;							// Buzzer is OFF
+			__delay_cycles(10000);					// Delay 80ms
+			
+			P2OUT |= BIT0;							// Buzzer is ON
+			__delay_cycles(30000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			P2OUT &= ~BIT0;							// Buzzer is OFF
+			__delay_cycles(100000);					// Delay 80ms
+			
 		}
 		else if (flag_gas == 1)
 		{
@@ -160,24 +190,21 @@ __interrupt void Timer_A (void)
 												// ADC10SHT_3: maximum sample-and-hold time
 												// ADC10ON: turns on the ADC10 peripheral
 	ADC10CTL0 |= ENC + ADC10SC;             // Sampling and conversion start
-	P1OUT |= BIT6; 			                // P1.6 on (green LED)
-	P1OUT |= BIT4; 			                // Light_Run ON
-
 	ADC10CTL0 &= ~ENC;				   		// Disable ADC conversion
 	ADC10CTL0 &= ~ADC10ON;		        	// ADC10 off
-	if (ADC10MEM < 177)
+	if (ADC10MEM > 617)
 		tempRaw = 3;
-	else if (ADC10MEM < 326)
+	else if (ADC10MEM > 542)
 		tempRaw = 1200;	
-	else if (ADC10MEM < 484)
+	else if (ADC10MEM > 484)
 		tempRaw = 1800;
-	else if (ADC10MEM < 542)
+	else if (ADC10MEM > 326)
 		tempRaw = 2400;
-	else if (ADC10MEM < 617)
+	else if (ADC10MEM > 177)
 		tempRaw = 3000;	
 	else
 		tempRaw = 3600;	
-		
+
 	if (t1 == tempRaw)		
 	{
 		t2--;
@@ -198,8 +225,9 @@ __interrupt void Timer_A (void)
 		t1 = tempRaw;
 		t2 = t1;
 	}	
+	
 	P1OUT ^= BIT6; 				            // Green LED off
-	P1OUT ^= BIT4; 				            // Light_Run OFF
+	P1OUT ^= BIT4; 				      		// Light_Run blink
 }
 
 #pragma vector=USCIAB0RX_VECTOR
@@ -224,7 +252,7 @@ __interrupt void PORT1_ISR(void)
 __interrupt void PORT2_ISR(void)
 {    
 	
-	if ((P2IFG&BIT3) == BIT3)					// RUN button is pressed
+	if ((P2IFG&BIT3) == BIT3)				// RUN button is pressed
 	{
 		P1OUT |= BIT4;						// light_run ON
 		t1 = 0;
