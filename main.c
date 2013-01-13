@@ -44,6 +44,8 @@ void main(void)
 		if (flag_timeout == 1)
 		{
 			// Buzzer TIME mode
+			P1OUT |= BIT4; 			                // Light_Run ON
+			
 			P2OUT |= BIT0;							// Buzzer is ON
 			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
 			P2OUT &= ~BIT0;							// Buzzer is OFF
@@ -53,17 +55,26 @@ void main(void)
 		else if (flag_gas == 1)
 		{
 			P2IE &= ~BIT3; 							// Start INT disable
-			if(P1IN & BIT5)						// Keep warning til Gas dose not appear
+			if(P1IN & BIT5)							// Keep warning til Gas dose not appear
 			{
 				// Buzzer GAS_OUT mode
+				P1OUT |= BIT3;						// light_gas ON
 				P2OUT |= BIT0;						// Buzzer is ON
 				__delay_cycles(7000);				// Delay 80ms, value = (time in second) * (DC0/8)
+				P1OUT &= ~BIT3;						// light_gas OFF
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+				__delay_cycles(7000);				// Delay 80ms
+				P1OUT |= BIT3;							// light_gas ON
+				P2OUT |= BIT0;						// Buzzer is ON
+				__delay_cycles(100000);
+				P1OUT &= ~BIT3;						// light_gas OFF
 				P2OUT &= ~BIT0;						// Buzzer is OFF
 				__delay_cycles(7000);				// Delay 80ms
 			}
 			else
 			{
 				// Buzzer OVER mode
+				P1OUT |= BIT3;						// light_gas ON
 				P2OUT |= BIT0;						// Buzzer is ON
 				__delay_cycles(20000);				// Delay 80ms, value = (time in second) * (DC0/8)
 				P2OUT &= ~BIT0;						// Buzzer is OFF
@@ -71,7 +82,7 @@ void main(void)
 				P2OUT |= BIT0;						// Buzzer is ON
 				__delay_cycles(20000);				// Delay 80ms, value = (time in second) * (DC0/8)				
 				P2OUT &= ~BIT0;						// Buzzer is OFF
-				__delay_cycles(100000);				// Delay 80ms
+				__delay_cycles(200000);				// Delay 80ms
 			}
 		}
 		else
@@ -112,7 +123,7 @@ void ConfigLEDs(void)
 
 	P1IE |= BIT5;                           // Enable GAS interrupt
 	P1IES &= ~BIT5;                         // Low to High transition
-	//P1IFG &= ~BIT5;                         // Clear interrupt Flags
+
 	P1IFG = 0;
 	P2IFG = 0;
 	
@@ -150,11 +161,12 @@ __interrupt void Timer_A (void)
 												// ADC10ON: turns on the ADC10 peripheral
 	ADC10CTL0 |= ENC + ADC10SC;             // Sampling and conversion start
 	P1OUT |= BIT6; 			                // P1.6 on (green LED)
-	//__delay_cycles(100);
+	P1OUT |= BIT4; 			                // Light_Run ON
+
 	ADC10CTL0 &= ~ENC;				   		// Disable ADC conversion
 	ADC10CTL0 &= ~ADC10ON;		        	// ADC10 off
 	if (ADC10MEM < 177)
-		tempRaw = 600;
+		tempRaw = 3;
 	else if (ADC10MEM < 326)
 		tempRaw = 1200;	
 	else if (ADC10MEM < 484)
@@ -173,6 +185,7 @@ __interrupt void Timer_A (void)
 		{
 			_BIC_SR_IRQ(LPM3_bits);			// LPM off
 			flag_timeout = 1;
+			CCTL0 &= ~CCIE;					// Disable capture/compare mode
 		}
 	}
 	else
@@ -186,6 +199,7 @@ __interrupt void Timer_A (void)
 		t2 = t1;
 	}	
 	P1OUT ^= BIT6; 				            // Green LED off
+	P1OUT ^= BIT4; 				            // Light_Run OFF
 }
 
 #pragma vector=USCIAB0RX_VECTOR
@@ -198,7 +212,6 @@ __interrupt void USCI0RX_ISR(void)
 #pragma vector=PORT1_VECTOR
 __interrupt void PORT1_ISR(void)
 {    
-	P1OUT |= BIT3;							// light_gas ON
 	flag_gas = 1;
 	flag_timeout = 0;						// Warning while buzzer in TIMEOUT mode
 	P1IFG &= ~BIT5;         				// Clear interrupt Flag for next warn	
