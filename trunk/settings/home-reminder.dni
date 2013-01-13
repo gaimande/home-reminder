@@ -30,26 +30,31 @@ ActionState=1
 Enabled=0
 ShowSource=1
 [State Storage]
-Control Register=49750
+Control Register=0
 [Sequencer]
-Control Register=49750
-NextState0=49750
-NextState1=49750
+Control Register=0
+NextState0=0
+NextState1=0
 [Action Register]
-Break=3
+Break=1
 State Storage=1
 [DebugChecksum]
-Checksum=-662598023
+Checksum=1120192051
 [CallStack]
 ShowArgs=0
 [Disassembly]
 MixedMode=1
 [watch_formats]
 Fmt0={W}0:CCTL0	1	0
+[CallStackLog]
+Enabled=0
+[DriverProfiling]
+Enabled=0
+Mode=0
+Graph=0
+Symbiont=0
 [Breakpoints]
-Bp0=_ "STD_CODE" "{$PROJ_DIR$\main.c}.204.2" 1 0 0 0 "" 0 ""
-Bp1=_ "STD_CODE" "{$PROJ_DIR$\main.c}.165.2" 1 0 0 0 "" 0 ""
-Count=2
+Count=0
 [FET]
 Clock mode=38
 Extended Clock mode=-1
@@ -80,10 +85,3 @@ LogFile=_ ""
 [Aliases]
 Count=0
 SuppressDialog=0
-[CallStackLog]
-Enabled=0
-[DriverProfiling]
-Enabled=0
-Mode=0
-Graph=0
-Symbiont=0

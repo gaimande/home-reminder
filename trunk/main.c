@@ -16,7 +16,7 @@
 #define TXD     BIT1		// TXD on P1.1
 #define RXD		BIT2     	// RXD on P1.2
 
-volatile unsigned int t1, t2, tempRaw;
+volatile unsigned long t1, t2, tempRaw;
 unsigned char flag_timeout, flag_gas;
 
 void FaultRoutine(void);
@@ -39,40 +39,44 @@ void main(void)
 	Print_UART("This is gaimande\n\r");
 	standby:	
 	_BIS_SR(LPM3_bits + GIE);
-	
-	if (flag_timeout == 1)
-	{
-		// Buzzer TIME mode
-		P2OUT |= BIT0;							// Buzzer is ON
-		__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
-		P2OUT &= ~BIT0;							// Buzzer is OFF
-		__delay_cycles(10000);					// Delay 80ms
-		
-	}
-	else if (flag_gas == 1)
-	{
-		P2IE &= ~BIT3; 							// Start INT disable
-		while(P1IN & BIT5)						// Keep warning til Gas dose not appear
+	while(1)
+	{		
+		if (flag_timeout == 1)
 		{
-			// Buzzer GAS_OUT mode
+			// Buzzer TIME mode
 			P2OUT |= BIT0;							// Buzzer is ON
 			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
 			P2OUT &= ~BIT0;							// Buzzer is OFF
 			__delay_cycles(10000);					// Delay 80ms
+			
 		}
-		// Buzzer GAS_OVER mode
-		while(1)						// Keep warning til Gas dose not appear
+		else if (flag_gas == 1)
 		{
-			// Buzzer GAS_OUT mode
-			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
-			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(700000);					// Delay 80ms
+			P2IE &= ~BIT3; 							// Start INT disable
+			if(P1IN & BIT5)						// Keep warning til Gas dose not appear
+			{
+				// Buzzer GAS_OUT mode
+				P2OUT |= BIT0;						// Buzzer is ON
+				__delay_cycles(7000);				// Delay 80ms, value = (time in second) * (DC0/8)
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+				__delay_cycles(7000);				// Delay 80ms
+			}
+			else
+			{
+				// Buzzer OVER mode
+				P2OUT |= BIT0;						// Buzzer is ON
+				__delay_cycles(20000);				// Delay 80ms, value = (time in second) * (DC0/8)
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+				__delay_cycles(4000);				// Delay 80ms
+				P2OUT |= BIT0;						// Buzzer is ON
+				__delay_cycles(20000);				// Delay 80ms, value = (time in second) * (DC0/8)				
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+				__delay_cycles(100000);				// Delay 80ms
+			}
 		}
-		
-	}
-	else
-		goto standby;		
+		else
+			goto standby;		
+	}		
 }
 
 void ConfigWDT(void)
@@ -116,7 +120,7 @@ void ConfigLEDs(void)
 	P2DIR = ~(BIT3 + BIT4 + BIT5);		  	// Run, Stop and Fao buttons as inputs, other outputs
 	P1REN |= BIT3 + BIT4 + BIT5;            // Pull-up resistor enable
 
-	P2IE |= BIT3 + BIT4 ;          	// Enable Buttons interrupt
+	P2IE |= BIT3 + BIT4 ;          			// Enable Buttons interrupt
 	P2IES |= (BIT3 + BIT4 + BIT5);        	// High to Low transition
 	P2IFG &= ~(BIT3 + BIT4 + BIT5);     	// Clear interrupt Flags
 
@@ -133,7 +137,7 @@ void ConfigADC10(void)
 void ConfigTimerA2(void)
 {
 	CCTL0 &= ~CCIE;							// Disable capture/compare mode
-	CCR0 = 12000;							// Select the ACLK (VLO) and sets the operation for up mode
+	CCR0 = 6000;							// Select the ACLK (VLO) and sets the operation for up mode
 	TACTL = TASSEL_1 + MC_1;				// CCR0 = 12000 x (time in second)
 }
 
@@ -150,17 +154,17 @@ __interrupt void Timer_A (void)
 	ADC10CTL0 &= ~ENC;				   		// Disable ADC conversion
 	ADC10CTL0 &= ~ADC10ON;		        	// ADC10 off
 	if (ADC10MEM < 177)
-		tempRaw = 300;
+		tempRaw = 600;
 	else if (ADC10MEM < 326)
-		tempRaw = 600;	
+		tempRaw = 1200;	
 	else if (ADC10MEM < 484)
-		tempRaw = 900;
+		tempRaw = 1800;
 	else if (ADC10MEM < 542)
-		tempRaw = 1200;
+		tempRaw = 2400;
 	else if (ADC10MEM < 617)
-		tempRaw = 1500;	
+		tempRaw = 3000;	
 	else
-		tempRaw = 1800;	
+		tempRaw = 3600;	
 		
 	if (t1 == tempRaw)		
 	{
@@ -177,6 +181,7 @@ __interrupt void Timer_A (void)
 		P2OUT |= BIT0;						// Buzzer is ON
 		__delay_cycles(10000);				// Delay 80ms, value = (time in second) * (DC0/8)
 		P2OUT &= ~BIT0;						// Buzzer is OFF
+		
 		t1 = tempRaw;
 		t2 = t1;
 	}	
@@ -189,21 +194,44 @@ __interrupt void USCI0RX_ISR(void)
 	Send_Char(UCA0RXBUF);
 }
 
+// GAS ISR
 #pragma vector=PORT1_VECTOR
 __interrupt void PORT1_ISR(void)
 {    
 	P1OUT |= BIT3;							// light_gas ON
 	flag_gas = 1;
+	flag_timeout = 0;						// Warning while buzzer in TIMEOUT mode
 	P1IFG &= ~BIT5;         				// Clear interrupt Flag for next warn	
+	CCTL0 &= ~CCIE;						// Disable capture/compare mode
 	_BIC_SR_IRQ(LPM3_bits);					// LPM off
 }
 
+// Buttons ISR
 #pragma vector=PORT2_VECTOR
 __interrupt void PORT2_ISR(void)
 {    
-	P1OUT |= BIT4;							// light_gas ON
-	t1 = 0;
-	P2IFG &= ~(BIT3 + BIT4);         		// Clear interrupt Flag for next warn
-	CCTL0 = CCIE;							// Enable capture/compare mode
-	_BIC_SR_IRQ(LPM3_bits);					// LPM off
+	
+	if ((P2IFG&BIT3) == BIT3)					// RUN button is pressed
+	{
+		P1OUT |= BIT4;						// light_run ON
+		t1 = 0;
+		CCTL0 = CCIE;						// Enable capture/compare mode
+		P2IFG &= ~BIT3;         			// Clear interrupt Flag for next warning
+	}
+	else if ((P2IFG&BIT4) == BIT4)			// STOP button is pressed
+	{
+		// BEEP
+		P2OUT |= BIT0;						// Buzzer is ON
+		__delay_cycles(10000);				// Delay 80ms, value = (time in second) * (DC0/8)
+		P2OUT &= ~BIT0;						// Buzzer is OFF
+		
+		P1OUT &= ~(BIT3+BIT4);				// light_run and light_gas OFF
+		P2OUT &= ~BIT0;						// Buzzer is OFF
+		flag_gas = 0;
+		flag_timeout = 0;
+		CCTL0 &= ~CCIE;						// Disable capture/compare mode
+		P2IE |= BIT3; 						// Start INT enable
+		P2IFG &= ~BIT4;         			// Clear interrupt Flag for next warning
+	}	
+	
 }

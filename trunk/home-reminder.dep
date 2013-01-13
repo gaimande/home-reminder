@@ -20,6 +20,8 @@
       <file>$TOOLKIT_DIR$\inc\intrinsics.h</file>
       <file>$PROJ_DIR$\uart_simple.h</file>
       <file>$TOOLKIT_DIR$\config\lnk430G2553.xcl</file>
+      <file>C:\Users\Jo\Desktop\Msp430 Lab\main.c</file>
+      <file>C:\Users\Jo\Desktop\UART_MSP430\uart_simple.c</file>
     </outputs>
     <file>
       <name>$PROJ_DIR$\main.c</name>
