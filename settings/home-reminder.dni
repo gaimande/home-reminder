@@ -39,13 +39,14 @@ NextState1=0
 Break=1
 State Storage=1
 [DebugChecksum]
-Checksum=767254390
+Checksum=1721942589
 [CallStack]
 ShowArgs=0
 [Disassembly]
 MixedMode=1
 [watch_formats]
 Fmt0={W}0:CCTL0	1	0
+Fmt1={W}0:counter	3	0
 [CallStackLog]
 Enabled=0
 [DriverProfiling]
@@ -54,7 +55,8 @@ Mode=0
 Graph=0
 Symbiont=0
 [Breakpoints]
-Count=0
+Bp0=_ "STD_CODE" "{$PROJ_DIR$\main.c}.129.2" 1 0 0 0 "" 0 ""
+Count=1
 [FET]
 Clock mode=38
 Extended Clock mode=-1

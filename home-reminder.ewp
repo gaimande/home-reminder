@@ -706,7 +706,7 @@
         </option>
         <option>
           <name>XclFile</name>
-          <state>$TOOLKIT_DIR$\CONFIG\lnk430F149.xcl</state>
+          <state>$TOOLKIT_DIR$\CONFIG\lnk430G2553.xcl</state>
         </option>
         <option>
           <name>XclFileSlave</name>
@@ -1868,6 +1868,9 @@
       <data/>
     </settings>
   </configuration>
+  <file>
+    <name>$PROJ_DIR$\bq32000.c</name>
+  </file>
   <file>
     <name>$PROJ_DIR$\main.c</name>
   </file>

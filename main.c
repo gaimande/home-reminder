@@ -8,17 +8,16 @@
 
 #include <msp430g2553.h>
 #include "uart_simple.h"
+#include "bq32000.h"
 #ifndef TIMER0_A1_VECTOR
 #define TIMER0_A1_VECTOR    TIMERA1_VECTOR
 #define TIMER0_A0_VECTOR    TIMERA0_VECTOR
 #endif
 
-#define TXD     BIT1		// TXD on P1.1
-#define RXD		BIT2     	// RXD on P1.2
-
 volatile unsigned long t1, t2, tempRaw;
 unsigned char flag_timeout, flag_gas, counter;
-
+unsigned char time_dat[7]={0x00,0x05,0x18,2,0x14,1,0x13};	// ss,min,hour,day,date,month,years
+unsigned char coun[7];
 void FaultRoutine(void);
 void ConfigWDT(void);
 void ConfigClocks(void);
@@ -36,7 +35,18 @@ void main(void)
 	ConfigADC10();
 	ConfigTimerA2();
 	ConfigUART();
+	ConfigI2C();
 	Print_UART("This is gaimande\n\r");
+	//Wirte_RTC(time_dat);
+	Send_Char(Read_RTC(2));
+	while(1);
+        while(1)
+		{
+			Print_UART("\r");
+			Send_Char(Read_RTC(2));
+			__no_operation(); 	
+		}	
+	
 	standby:	
 	_BIS_SR(LPM3_bits + GIE);
 	while(1)
@@ -44,45 +54,6 @@ void main(void)
 		if (flag_timeout == 1)
 		{
 			// Buzzer TIME mode
-			/*
-			P1OUT |= BIT4; 			                // Light_Run ON
-			
-			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
-			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(10000);					// Delay 80ms
-			
-			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms
-			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(10000);					// Delay 80ms
-			
-			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms
-			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(10000);					// Delay 80ms
-			
-			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms
-			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(10000);					// Delay 80ms
-			
-			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms
-			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(30000);					// Delay 240ms
-			
-			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(8000);					// Delay 64ms
-			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(10000);					// Delay 80ms
-			
-			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(30000);					// Delay 240ms
-			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(125000);					// Delay 1s
-			*/
-			
 			if (counter < 4)						// Delay 90 ms, counter is 30ms per tick
 			{
 				P1OUT |= BIT4; 			          	// Light_Run ON		
@@ -161,13 +132,13 @@ void ConfigWDT(void)
 void ConfigClocks(void)
 {
 	if (CALBC1_1MHZ ==0xFF || CALDCO_1MHZ == 0xFF)
-	FaultRoutine();		                    // If calibration data is erased
-											// run FaultRoutine()
-	BCSCTL1 = CALBC1_1MHZ; 					// Set range
-	DCOCTL = CALDCO_1MHZ;  					// Set DCO step + modulation
-	BCSCTL3 |= LFXT1S_2;                    // LFXT1 = VLO
-	IFG1 &= ~OFIFG;                         // Clear OSCFault flag
-	BCSCTL2 |= SELM_0 + DIVM_3 + DIVS_3;    // MCLK = DCO/8, SMCLK = DCO/8
+		FaultRoutine();		                    // If calibration data is erased
+												// run FaultRoutine()
+	BCSCTL1 = CALBC1_1MHZ; 						// Set range
+	DCOCTL = CALDCO_1MHZ;  						// Set DCO step + modulation
+	BCSCTL3 |= LFXT1S_2;                    	// LFXT1 = VLO
+	IFG1 &= ~OFIFG;                         	// Clear OSCFault flag
+	BCSCTL2 |= SELM_0 + DIVM_3 + DIVS_0;    	// MCLK = DCO/8, SMCLK = DCO/1
 }
 
 void FaultRoutine(void)
@@ -178,10 +149,7 @@ void FaultRoutine(void)
 
 void ConfigLEDs(void)
 {
-	P1SEL = TXD + RXD;						// P1.1 & 2 TA0, rest GPIO
-	P1SEL2 = TXD + RXD;						// P1.1 & 2 TA0, rest GPIO
-
-	P1DIR = ~(BIT0 + BIT5 + RXD);			// ADC pin, MQ2 pin adn RXD pin as inputs, other outputs
+	P1DIR = ~(BIT0 + BIT5);					// ADC pin, MQ2 pin as inputs, other outputs
 	P1REN |= BIT0 + BIT5;                   // Pull-up resistor enable
 
 	P1IE |= BIT5;                           // Enable GAS interrupt
@@ -229,11 +197,11 @@ __interrupt void Timer_A (void)
 	ADC10CTL0 = SREF_0 + ADC10SHT_3 + ADC10ON;	// SREF_0: selects the range from Vss to Vcc
 												// ADC10SHT_3: maximum sample-and-hold time
 												// ADC10ON: turns on the ADC10 peripheral
-	ADC10CTL0 |= ENC + ADC10SC;             // Sampling and conversion start
-	ADC10CTL0 &= ~ENC;				   		// Disable ADC conversion
-	ADC10CTL0 &= ~ADC10ON;		        	// ADC10 off
+	ADC10CTL0 |= ENC + ADC10SC;             	// Sampling and conversion start
+	ADC10CTL0 &= ~ENC;				   			// Disable ADC conversion
+	ADC10CTL0 &= ~ADC10ON;		        		// ADC10 off
 	if (ADC10MEM > 617)
-		tempRaw = 3;
+		tempRaw = 600;
 	else if (ADC10MEM > 542)
 		tempRaw = 1200;	
 	else if (ADC10MEM > 484)
@@ -266,7 +234,6 @@ __interrupt void Timer_A (void)
 		t1 = tempRaw;
 		t2 = t1;
 	}		
-	P1OUT ^= BIT6; 				            // Green LED off
 	P1OUT ^= BIT4; 				      		// Light_Run blink
 	exit_isr:
 }
