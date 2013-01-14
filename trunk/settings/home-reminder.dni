@@ -54,8 +54,7 @@ Mode=0
 Graph=0
 Symbiont=0
 [Breakpoints]
-Bp0=_ "STD_CODE" "{$PROJ_DIR$\main.c}.236.2" 1 0 0 0 "" 0 ""
-Count=1
+Count=0
 [FET]
 Clock mode=38
 Extended Clock mode=-1
