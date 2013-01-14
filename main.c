@@ -17,7 +17,7 @@
 #define RXD		BIT2     	// RXD on P1.2
 
 volatile unsigned long t1, t2, tempRaw;
-unsigned char flag_timeout, flag_gas;
+unsigned char flag_timeout, flag_gas, counter;
 
 void FaultRoutine(void);
 void ConfigWDT(void);
@@ -44,6 +44,7 @@ void main(void)
 		if (flag_timeout == 1)
 		{
 			// Buzzer TIME mode
+			/*
 			P1OUT |= BIT4; 			                // Light_Run ON
 			
 			P2OUT |= BIT0;							// Buzzer is ON
@@ -52,35 +53,69 @@ void main(void)
 			__delay_cycles(10000);					// Delay 80ms
 			
 			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			__delay_cycles(10000);					// Delay 80ms
 			P2OUT &= ~BIT0;							// Buzzer is OFF
 			__delay_cycles(10000);					// Delay 80ms
 			
 			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			__delay_cycles(10000);					// Delay 80ms
 			P2OUT &= ~BIT0;							// Buzzer is OFF
 			__delay_cycles(10000);					// Delay 80ms
 			
 			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			__delay_cycles(10000);					// Delay 80ms
 			P2OUT &= ~BIT0;							// Buzzer is OFF
 			__delay_cycles(10000);					// Delay 80ms
 			
 			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(10000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			__delay_cycles(10000);					// Delay 80ms
 			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(30000);					// Delay 80ms
+			__delay_cycles(30000);					// Delay 240ms
 			
 			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(8000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			__delay_cycles(8000);					// Delay 64ms
 			P2OUT &= ~BIT0;							// Buzzer is OFF
 			__delay_cycles(10000);					// Delay 80ms
 			
 			P2OUT |= BIT0;							// Buzzer is ON
-			__delay_cycles(30000);					// Delay 80ms, value = (time in second) * (DC0/8)
+			__delay_cycles(30000);					// Delay 240ms
 			P2OUT &= ~BIT0;							// Buzzer is OFF
-			__delay_cycles(100000);					// Delay 80ms
+			__delay_cycles(125000);					// Delay 1s
+			*/
 			
+			if (counter < 4)						// Delay 90 ms, counter is 30ms per tick
+			{
+				P1OUT |= BIT4; 			          	// Light_Run ON		
+				P2OUT |= BIT0;							// Buzzer is ON
+			}	
+			else if (counter < 7)					// Delay 90 ms
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+			else if (counter < 10)					// Delay 90 ms
+				P2OUT |= BIT0;						// Buzzer is ON
+			else if (counter < 13)					// Delay 90 ms
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+			else if (counter < 16)					// Delay 90 ms
+				P2OUT |= BIT0;						// Buzzer is ON
+			else if (counter < 19)					// Delay 90 ms
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+			else if (counter < 22)					// Delay 90 ms
+				P2OUT |= BIT0;						// Buzzer is ON
+			else if (counter < 25)					// Delay 90 ms
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+			else if (counter < 28)					// Delay 90 ms
+				P2OUT |= BIT0;						// Buzzer is ON
+			else if (counter < 36)					// Delay 240 ms
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+			else if (counter < 38)					// Delay 60 ms
+				P2OUT |= BIT0;						// Buzzer is ON	
+			else if (counter < 41)					// Delay 90 ms
+				P2OUT &= ~BIT0;						// Buzzer is OFF	
+			else if (counter < 49)					// Delay 240 ms
+				P2OUT |= BIT0;						// Buzzer is ON
+			else if (counter < 81)					// Delay 960 ms
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+			else
+				counter = 0;
 		}
 		else if (flag_gas == 1)
 		{
@@ -88,35 +123,33 @@ void main(void)
 			if(P1IN & BIT5)							// Keep warning til Gas dose not appear
 			{
 				// Buzzer GAS_OUT mode
-				P1OUT |= BIT3;						// light_gas ON
-				P2OUT |= BIT0;						// Buzzer is ON
-				__delay_cycles(7000);				// Delay 80ms, value = (time in second) * (DC0/8)
-				P1OUT &= ~BIT3;						// light_gas OFF
-				P2OUT &= ~BIT0;						// Buzzer is OFF
-				__delay_cycles(7000);				// Delay 80ms
-				P1OUT |= BIT3;							// light_gas ON
-				P2OUT |= BIT0;						// Buzzer is ON
-				__delay_cycles(100000);
-				P1OUT &= ~BIT3;						// light_gas OFF
-				P2OUT &= ~BIT0;						// Buzzer is OFF
-				__delay_cycles(7000);				// Delay 80ms
+				if (counter == 2)					// Delay 60 ms, counter is 30ms per tick
+				{
+					P1OUT ^= BIT3;					// light_gas ON
+					P2OUT ^= BIT0;					// Buzzer is ON	
+					counter = 0;
+				}	
 			}
 			else
 			{
 				// Buzzer OVER mode
-				P1OUT |= BIT3;						// light_gas ON
-				P2OUT |= BIT0;						// Buzzer is ON
-				__delay_cycles(20000);				// Delay 80ms, value = (time in second) * (DC0/8)
-				P2OUT &= ~BIT0;						// Buzzer is OFF
-				__delay_cycles(4000);				// Delay 80ms
-				P2OUT |= BIT0;						// Buzzer is ON
-				__delay_cycles(20000);				// Delay 80ms, value = (time in second) * (DC0/8)				
-				P2OUT &= ~BIT0;						// Buzzer is OFF
-				__delay_cycles(200000);				// Delay 80ms
+				if (counter < 6)					// Delay 150 ms, counter is 30ms per tick
+				{
+					P1OUT |= BIT3;					// light_gas ON
+					P2OUT |= BIT0;					// Buzzer is ON
+				}	
+				else if (counter < 7)				// Delay 30 ms
+					P2OUT &= ~BIT0;					// Buzzer is OFF
+				else if (counter < 13)				// Delay 150 ms
+					P2OUT |= BIT0;					// Buzzer is ON
+				else if (counter < 63)				// Delay 1.50s	
+					P2OUT &= ~BIT0;					// Buzzer is OFF
+				else
+					counter = 0;
 			}
 		}
-		else
-			goto standby;		
+		
+		goto standby;		
 	}		
 }
 
@@ -179,12 +212,19 @@ void ConfigTimerA2(void)
 {
 	CCTL0 &= ~CCIE;							// Disable capture/compare mode
 	CCR0 = 6000;							// Select the ACLK (VLO) and sets the operation for up mode
-	TACTL = TASSEL_1 + MC_1;				// CCR0 = 12000 x (time in second)
+	TACTL = TASSEL_1 + MC_1;				// Change timer to 500ms period with CCR0 = 12000 x (time in second)
 }
 
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void)
 {
+	if((flag_timeout == 1) || (flag_gas == 1))
+	{
+		counter++;
+		_BIC_SR_IRQ(LPM3_bits);					// LPM off
+		goto exit_isr;
+	}
+	
 	// Read ADC value
 	ADC10CTL0 = SREF_0 + ADC10SHT_3 + ADC10ON;	// SREF_0: selects the range from Vss to Vcc
 												// ADC10SHT_3: maximum sample-and-hold time
@@ -212,7 +252,8 @@ __interrupt void Timer_A (void)
 		{
 			_BIC_SR_IRQ(LPM3_bits);			// LPM off
 			flag_timeout = 1;
-			CCTL0 &= ~CCIE;					// Disable capture/compare mode
+			CCR0 = 360;						// Change timer to 30ms period with CCR0 = 12000 x (time in second)
+			counter = 0;					// reset counter
 		}
 	}
 	else
@@ -224,10 +265,10 @@ __interrupt void Timer_A (void)
 		
 		t1 = tempRaw;
 		t2 = t1;
-	}	
-	
+	}		
 	P1OUT ^= BIT6; 				            // Green LED off
 	P1OUT ^= BIT4; 				      		// Light_Run blink
+	exit_isr:
 }
 
 #pragma vector=USCIAB0RX_VECTOR
@@ -243,7 +284,9 @@ __interrupt void PORT1_ISR(void)
 	flag_gas = 1;
 	flag_timeout = 0;						// Warning while buzzer in TIMEOUT mode
 	P1IFG &= ~BIT5;         				// Clear interrupt Flag for next warn	
-	CCTL0 &= ~CCIE;						// Disable capture/compare mode
+	CCTL0 |= CCIE;							// Enable capture/compare mode
+	CCR0 = 360;								// Change timer to 30ms period with CCR0 = 12000 x (time in second)
+	counter = 0;							// reset counter
 	_BIC_SR_IRQ(LPM3_bits);					// LPM off
 }
 
@@ -256,7 +299,9 @@ __interrupt void PORT2_ISR(void)
 	{
 		P1OUT |= BIT4;						// light_run ON
 		t1 = 0;
-		CCTL0 = CCIE;						// Enable capture/compare mode
+		CCTL0 |= CCIE;						// Enable capture/compare mode
+		flag_timeout = 0;					// restart timer
+		CCR0 = 6000;						// Change timer to 500ms period with CCR0 = 12000 x (time in second)
 		P2IFG &= ~BIT3;         			// Clear interrupt Flag for next warning
 	}
 	else if ((P2IFG&BIT4) == BIT4)			// STOP button is pressed
