@@ -1,10 +1,10 @@
-//***********************************************************
-// Lab5.c  Temperature sampling example using ADC10
-//         Clocking: MCLK and SMCLK = 1.1MHz DCO/8
-//					 ACLK = 12kHz VLO
+//************************************************
+// 			Home Reminder Project
+//         			by
+//				 gaimande
 //
-// SFB 1/2012
-//***********************************************************
+// Jan 2013
+//************************************************
 
 #include <msp430g2553.h>
 #include "uart_simple.h"
@@ -37,8 +37,22 @@ void main(void)
 	ConfigUART();
 	ConfigI2C();
 	Print_UART("This is gaimande\n\r");
-	//Wirte_RTC(time_dat);
-	Send_Char(Read_RTC(2));
+	Wirte_RTC(time_dat);
+	Send_Char(Read_RTC(3));
+
+	CAL_RTC();
+	
+	Send_Char(Read_RTC(0x07));
+	Send_Char(Read_RTC(0x20));
+	Send_Char(Read_RTC(0x21));
+	Send_Char(Read_RTC(0x22));
+
+	 while(1)
+		{
+	__delay_cycles(100000);				// Delay 80ms, value = (time in second) * (DC0/8)
+	Send_Char(Read_RTC(0x07));
+	Send_Char(Read_RTC(0x22));
+	}
 	while(1);
         while(1)
 		{
