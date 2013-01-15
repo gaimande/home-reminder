@@ -17,7 +17,22 @@
 volatile unsigned long t1, t2, tempRaw;
 unsigned char flag_timeout, flag_gas, counter;
 unsigned char time_dat[7]={0x00,0x05,0x18,2,0x14,1,0x13};	// ss,min,hour,day,date,month,years
-unsigned char coun[7];
+unsigned char coun[8];
+
+RTC_TIME* myTime;
+
+char* month_table[13]=
+   {  "---",
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+   };
+
+char* day_table[8]=
+   {  "---", "Sunday",
+      "Monday", "Tuesday", "Wednesday", "Thursday",
+      "Friday", "Saturday"
+   };   
+   
 void FaultRoutine(void);
 void ConfigWDT(void);
 void ConfigClocks(void);
@@ -36,31 +51,48 @@ void main(void)
 	ConfigTimerA2();
 	ConfigUART();
 	ConfigI2C();
-	Print_UART("This is gaimande\n\r");
-	Wirte_RTC(time_dat);
-	Send_Char(Read_RTC(3));
-
 	CAL_RTC();
-	
-	Send_Char(Read_RTC(0x07));
-	Send_Char(Read_RTC(0x20));
-	Send_Char(Read_RTC(0x21));
-	Send_Char(Read_RTC(0x22));
+	Print_UART("This is gaimande\n\r");
 
-	 while(1)
-		{
-	__delay_cycles(100000);				// Delay 80ms, value = (time in second) * (DC0/8)
-	Send_Char(Read_RTC(0x07));
-	Send_Char(Read_RTC(0x22));
-	}
-	while(1);
-        while(1)
-		{
-			Print_UART("\r");
-			Send_Char(Read_RTC(2));
-			__no_operation(); 	
-		}	
-	
+	myTime = (RTC_TIME*)malloc(sizeof(RTC_TIME));
+	/*
+	// set RTC to Tuesday, Jan 15, 2013 @11:19:00
+	myTime->seconds = 0;                  
+	myTime->minutes = 0x55;
+	myTime->hours = 0x12;
+	myTime->day = 3;             
+	myTime->date = 0x15;            
+	myTime->month = 0x01;             
+	myTime->year = 0x13;          
+	Write_RTC(myTime);
+    */      
+
+	while(1)
+	{
+		Read_all_RTC(myTime);
+		
+		//Print to UART as format: Monday, Jan 15, 2013 @15:00:00
+		Print_UART(day_table[myTime->day]);
+		Print_UART(", ");
+		Print_UART(month_table[((myTime->month >> 4) * 10 + (myTime->month & 0x0F))]);
+		Print_UART(" ");
+		Send_Char((unsigned char)((myTime->date >> 4) + 0x30));
+		Send_Char((unsigned char)((myTime->date & 0x0F) + 0x30));
+		Print_UART(", 20");
+		Send_Char((unsigned char)((myTime->year >> 4) + 0x30));
+		Send_Char((unsigned char)((myTime->year & 0x0F) + 0x30));
+		Print_UART(" @");
+		Send_Char((unsigned char)((myTime->hours >> 4) + 0x30));
+		Send_Char((unsigned char)((myTime->hours & 0x0F) + 0x30));
+		Print_UART(":");
+		Send_Char((unsigned char)((myTime->minutes >> 4) + 0x30));
+		Send_Char((unsigned char)((myTime->minutes & 0x0F) + 0x30));
+		Print_UART(":");
+		Send_Char((unsigned char)((myTime->seconds >> 4) + 0x30));
+		Send_Char((unsigned char)((myTime->seconds & 0x0F) + 0x30));
+		Print_UART("\n\r");
+	}	
+
 	standby:	
 	_BIS_SR(LPM3_bits + GIE);
 	while(1)

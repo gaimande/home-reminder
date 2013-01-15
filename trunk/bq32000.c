@@ -1,4 +1,5 @@
 #include <msp430g2553.h>
+#include "bq32000.h"
 #define SDA     BIT7		// SDA on P1.7
 #define SCL		BIT6     	// SCL on P1.6
 
@@ -29,6 +30,7 @@ void ConfigI2C()
 	 UCB0I2CIE |= UCNACKIE; 				// Cho phep ngat acnk recever
 	 UCB0CTL1 &= ~UCSWRST;       			// Clear SW reset, resume operation	
 }
+
 //==============================================================
 unsigned char Read_RTC(unsigned char address)
 {
@@ -52,7 +54,50 @@ unsigned char Read_RTC(unsigned char address)
 }
 
 //=========================================================================
-void Wirte_RTC(unsigned char *time_data)
+void Read_all_RTC(RTC_TIME* time)
+{
+	while (UCB0CTL1 & UCTXSTP);             // Ensure stop condition got sent	
+	
+	UCB0CTL1 |= UCTR + UCTXSTT;             // I2C TX, start condition       
+	
+	while (!(IFG2&UCB0TXIFG));     
+	UCB0TXBUF = 0x00;						// Read from second
+
+	while (!(IFG2&UCB0TXIFG));  
+
+	UCB0CTL1 &= ~UCTR;                      // I2C RX 
+	UCB0CTL1 |= UCTXSTT;                    // I2C start condition	
+	IFG2 &= ~UCB0TXIFG;                     // Clear USCI_B0 TX int flag
+	
+	while (UCB0CTL1 & UCTXSTT);             // Loop until I2C STT is sent
+	
+	time->seconds = UCB0RXBUF;                 
+	
+	while (!(IFG2&UCB0RXIFG));  
+	time->minutes = UCB0RXBUF;
+	
+	while (!(IFG2&UCB0RXIFG));  
+	time->hours = UCB0RXBUF;
+	
+	while (!(IFG2&UCB0RXIFG));  
+	time->day = UCB0RXBUF;                     
+	
+	while (!(IFG2&UCB0RXIFG));  
+	time->date = UCB0RXBUF;                    
+	
+	while (!(IFG2&UCB0RXIFG));  
+	time->month = UCB0RXBUF;                    
+	
+	while (!(IFG2&UCB0RXIFG));  
+	time->year = UCB0RXBUF;                   
+	
+
+    UCB0CTL1 |= UCTXSTP;                    // I2C stop condition after 1st TX
+	
+}
+
+//=========================================================================
+void Write_RTC(RTC_TIME* time)
 {
 
 	while (UCB0CTL1 & UCTXSTP);             // Loop until I2C STT is sent
@@ -61,16 +106,32 @@ void Wirte_RTC(unsigned char *time_data)
 	while (!(IFG2&UCB0TXIFG)); 
 	UCB0TXBUF = 0x00; 						// adress
 
-	for(unsigned char i = 0; i < 7; i++)
-	{
-		while (!(IFG2&UCB0TXIFG)); 
-		UCB0TXBUF = time_data[i];
-	}	
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = time->seconds;
+	
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = time->minutes;
+	
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = time->hours;
+	
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = time->day;
+	
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = time->date;
+	
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = time->month;
+	
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = time->year;
 	
 	while (!(IFG2&UCB0TXIFG));	
 	UCB0CTL1 |= UCTXSTP;                    // I2C stop condition after 1st TX
 	IFG2 &= ~UCB0TXIFG;                     // Clear USCI_B0 TX int flag 
 }	
+
 //==========================================================================
 void CAL_RTC(void)
 {
