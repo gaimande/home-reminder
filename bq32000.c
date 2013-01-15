@@ -2,9 +2,6 @@
 #define SDA     BIT7		// SDA on P1.7
 #define SCL		BIT6     	// SCL on P1.6
 
-unsigned char Timer_Temperture[16];
-unsigned char Timer_from_PC[7];
-
 void ConfigI2C()
 {
 	 P1DIR |= SCL;                         
@@ -75,4 +72,35 @@ void Wirte_RTC(unsigned char *time_data)
 	IFG2 &= ~UCB0TXIFG;                     // Clear USCI_B0 TX int flag 
 }	
 //==========================================================================
+void CAL_RTC(void)
+{
+	while (UCB0CTL1 & UCTXSTP);             // Loop until I2C STT is sent
+	UCB0CTL1 |= UCTR + UCTXSTT;             // I2C TX, start condition
+	UCB0TXBUF = 0x07;						// CAL_CFG1 register address
 
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = 0xFF;						//  Enable the test signal on the IRQ pin and speed the RTC to -126ppm
+	
+	while (!(IFG2&UCB0TXIFG));
+
+	UCB0CTL1 |= UCTXSTP;                    // I2C stop condition after 1st TX
+	IFG2 &= ~UCB0TXIFG;       
+	
+	while (UCB0CTL1 & UCTXSTP);             // Loop until I2C STT is sent
+	UCB0CTL1 |= UCTR + UCTXSTT;             // I2C TX, start condition
+	UCB0TXBUF = 0x20;						// CAL_CFG1 register address
+	
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = 0x5E;						//  SF KEY 1
+
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = 0xC7;						// SF KEY 2
+
+	while (!(IFG2&UCB0TXIFG)); 
+	UCB0TXBUF = 0x01;						// SFR, force calibration to 1 Hz
+
+	while (!(IFG2&UCB0TXIFG));
+
+	UCB0CTL1 |= UCTXSTP;                    // I2C stop condition after 1st TX
+	IFG2 &= ~UCB0TXIFG;       
+}	
