@@ -4,6 +4,8 @@ void Send_Char(unsigned char chr)
 {
 	while (!(IFG2&UCA0TXIFG));      	// USCI_A0 TX buffer ready?
   	UCA0TXBUF = chr;            		// TX -> RXed character
+	//__no_operation(); 	
+	while(UCA0STAT & UCBUSY);			// Wait until the last byte is completely sent
 }
 void Print_UART(char *ch)
 {

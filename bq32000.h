@@ -1,15 +1,15 @@
 typedef struct time_struct
 {
-   uint8   seconds;
-   uint8   minutes;
-   uint8   hours;
-   uint8   day;
-   uint8   date;
-   uint8   month;
-   uint8   year;
-   uint8   cal_cfg1;
+   unsigned char   seconds;
+   unsigned char   minutes;
+   unsigned char   hours;
+   unsigned char   day;
+   unsigned char   date;
+   unsigned char   month;
+   unsigned char   year;
+   unsigned char   cal_cfg1;
 } RTC_TIME;
-
+   
 /*ConfigI2C
 * Sets up the I2C interface via USCI
 * INPUT: None
@@ -24,12 +24,19 @@ void ConfigI2C(void);
 */
 unsigned char Read_RTC(unsigned char);
 
-/*Wirte_RTC
+/*Read_RTC
+* Read RTC from specific address
+* INPUT: unsigned char
+* RETURN: RTC_TIME
+*/
+void Read_all_RTC(RTC_TIME* time);
+
+/*Write_RTC
 * Write to RTC from specific address
 * INPUT: unsigned
 * RETURN: None
 */
-void Wirte_RTC(unsigned char *);
+void Write_RTC(RTC_TIME* time);
 
 /*CAL_RTC
 * Calibrate the RTC
@@ -37,3 +44,5 @@ void Wirte_RTC(unsigned char *);
 * RETURN: None
 */
 void CAL_RTC(void);
+
+const char* month_name(int n);
