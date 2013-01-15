@@ -30,16 +30,16 @@ ActionState=1
 Enabled=0
 ShowSource=1
 [State Storage]
-Control Register=49434
+Control Register=0
 [Sequencer]
-Control Register=49434
-NextState0=49434
-NextState1=49434
+Control Register=0
+NextState0=0
+NextState1=0
 [Action Register]
-Break=1
+Break=0
 State Storage=1
 [DebugChecksum]
-Checksum=-1740803002
+Checksum=13715326
 [CallStack]
 ShowArgs=0
 [Disassembly]
@@ -50,8 +50,7 @@ Fmt1={W}0:UCB0RXBUF	4	0
 Fmt2={W}0:counter	3	0
 Fmt3={W}0:ias	5	0
 [Breakpoints]
-Bp0=_ "STD_CODE" "{$PROJ_DIR$\main.c}.72.3" 1 0 0 0 "" 0 ""
-Count=1
+Count=0
 [FET]
 Clock mode=38
 Extended Clock mode=-1

@@ -15,7 +15,7 @@
 #endif
 
 volatile unsigned long t1, t2, tempRaw;
-unsigned char flag_timeout, flag_gas, counter;
+unsigned char flag_timeout, flag_gas, counter, index = 0;
 unsigned char time_dat[7]={0x00,0x05,0x18,2,0x14,1,0x13};	// ss,min,hour,day,date,month,years
 unsigned char coun[8];
 
@@ -40,6 +40,7 @@ void ConfigLEDs(void);
 void ConfigADC10(void);
 void ConfigTimerA2(void);
 void Warning(void);
+void Print_RTC();
 
 void main(void)
 {
@@ -67,32 +68,9 @@ void main(void)
 	Write_RTC(myTime);
     */      
 
-	while(1)
-	{
-		Read_all_RTC(myTime);
-		
-		//Print to UART as format: Monday, Jan 15, 2013 @15:00:00
-		Print_UART(day_table[myTime->day]);
-		Print_UART(", ");
-		Print_UART(month_table[((myTime->month >> 4) * 10 + (myTime->month & 0x0F))]);
-		Print_UART(" ");
-		Send_Char((unsigned char)((myTime->date >> 4) + 0x30));
-		Send_Char((unsigned char)((myTime->date & 0x0F) + 0x30));
-		Print_UART(", 20");
-		Send_Char((unsigned char)((myTime->year >> 4) + 0x30));
-		Send_Char((unsigned char)((myTime->year & 0x0F) + 0x30));
-		Print_UART(" @");
-		Send_Char((unsigned char)((myTime->hours >> 4) + 0x30));
-		Send_Char((unsigned char)((myTime->hours & 0x0F) + 0x30));
-		Print_UART(":");
-		Send_Char((unsigned char)((myTime->minutes >> 4) + 0x30));
-		Send_Char((unsigned char)((myTime->minutes & 0x0F) + 0x30));
-		Print_UART(":");
-		Send_Char((unsigned char)((myTime->seconds >> 4) + 0x30));
-		Send_Char((unsigned char)((myTime->seconds & 0x0F) + 0x30));
-		Print_UART("\n\r");
-	}	
-
+	Read_all_RTC(myTime);
+	Print_RTC();
+	
 	standby:	
 	_BIS_SR(LPM3_bits + GIE);
 	while(1)
@@ -287,7 +265,63 @@ __interrupt void Timer_A (void)
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void)
 {    
-	Send_Char(UCA0RXBUF);
+	switch(index)
+	{
+		case 0:
+			myTime->seconds = UCA0RXBUF;
+			index++;
+			break;
+		case 1:
+			myTime->minutes = UCA0RXBUF;
+			index++;
+			break;
+		case 2:
+			myTime->hours = UCA0RXBUF;
+			index++;
+			break;
+		case 3:
+			myTime->day = UCA0RXBUF;
+			index++;
+			break;
+		case 4:
+			myTime->date = UCA0RXBUF;
+			index++;
+			break;
+		case 5:
+			myTime->month = UCA0RXBUF;
+			index++;
+			break;
+		case 6:
+			myTime->year = UCA0RXBUF;
+			index++;	
+			break;
+		case 7:
+			if (UCA0RXBUF=='#')
+			{
+				Print_UART("Changing time sucessfully!\n\r");
+				Write_RTC(myTime);
+				Print_RTC();
+				// BEEP
+				P2OUT |= BIT0;						// Buzzer is ON
+				__delay_cycles(10000);				// Delay 80ms, value = (time in second) * (DC0/8)
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+				__delay_cycles(1000);				// Delay 80ms
+				P2OUT |= BIT0;						// Buzzer is ON
+				__delay_cycles(10000);				// Delay 80ms, value = (time in second) * (DC0/8)
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+			}	
+			else
+			{
+				Print_UART("Changing time fail :(\n\r");
+				// BEEP
+				P2OUT |= BIT0;						// Buzzer is ON
+				__delay_cycles(10000);				// Delay 80ms, value = (time in second) * (DC0/8)
+				P2OUT &= ~BIT0;						// Buzzer is OFF
+			}
+		default:
+			index = 0;
+			
+	}
 }
 
 // GAS ISR
@@ -333,4 +367,28 @@ __interrupt void PORT2_ISR(void)
 		P2IFG &= ~BIT4;         			// Clear interrupt Flag for next warning
 	}	
 	
+}
+
+void Print_RTC()
+{	
+	//Print to UART as format: Monday, Jan 15, 2013 @15:00:00
+	Print_UART(day_table[myTime->day]);
+	Print_UART(", ");
+	Print_UART(month_table[((myTime->month >> 4) * 10 + (myTime->month & 0x0F))]);
+	Print_UART(" ");
+	Send_Char((unsigned char)((myTime->date >> 4) + 0x30));
+	Send_Char((unsigned char)((myTime->date & 0x0F) + 0x30));
+	Print_UART(", 20");
+	Send_Char((unsigned char)((myTime->year >> 4) + 0x30));
+	Send_Char((unsigned char)((myTime->year & 0x0F) + 0x30));
+	Print_UART(" @");
+	Send_Char((unsigned char)((myTime->hours >> 4) + 0x30));
+	Send_Char((unsigned char)((myTime->hours & 0x0F) + 0x30));
+	Print_UART(":");
+	Send_Char((unsigned char)((myTime->minutes >> 4) + 0x30));
+	Send_Char((unsigned char)((myTime->minutes & 0x0F) + 0x30));
+	Print_UART(":");
+	Send_Char((unsigned char)((myTime->seconds >> 4) + 0x30));
+	Send_Char((unsigned char)((myTime->seconds & 0x0F) + 0x30));
+	Print_UART("\n\r");
 }
