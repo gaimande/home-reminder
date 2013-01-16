@@ -15,19 +15,19 @@
 #endif
 
 volatile unsigned long t1, t2, tempRaw;
-unsigned char flag_timeout, flag_gas, counter, index = 0;
+unsigned char flag_timeout, flag_gas, counter, notice_send, index = 0;
 unsigned char time_dat[7]={0x00,0x05,0x18,2,0x14,1,0x13};	// ss,min,hour,day,date,month,years
 unsigned char coun[8];
 
 RTC_TIME* myTime;
 
-char* month_table[13]=
+static char* month_table[13]=
    {  "---",
       "Jan", "Feb", "Mar", "Apr", "May", "Jun",
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
    };
 
-char* day_table[8]=
+static char* day_table[8]=
    {  "---", "Sunday",
       "Monday", "Tuesday", "Wednesday", "Thursday",
       "Friday", "Saturday"
@@ -53,24 +53,34 @@ void main(void)
 	ConfigUART();
 	ConfigI2C();
 	CAL_RTC();
-	Print_UART("This is gaimande\n\r");
+	
+	// Introduction
+	Print_UART("Home Reminder version CS1\n\r");
+	Print_UART("Copyright by gaimande @ 2013\n\r");
+	Print_UART("Contact: gaimande@gmail.com\n\r");
+	Print_UART("Thank you for chosing!\n\r");
+	Print_UART("-----------------------------\n\r");
 
+	// Set RTC to Tuesday, Jan 1, 2013 @11:19:00 at reset
 	myTime = (RTC_TIME*)malloc(sizeof(RTC_TIME));
-	/*
-	// set RTC to Tuesday, Jan 15, 2013 @11:19:00
 	myTime->seconds = 0;                  
-	myTime->minutes = 0x55;
+	myTime->minutes = 0x00;
 	myTime->hours = 0x12;
 	myTime->day = 3;             
-	myTime->date = 0x15;            
+	myTime->date = 0x01;            
 	myTime->month = 0x01;             
 	myTime->year = 0x13;          
 	Write_RTC(myTime);
-    */      
-
+	// Print time for the first use
 	Read_all_RTC(myTime);
 	Print_RTC();
+	Print_UART("\n\r");
 	
+	// BEEP
+	P2OUT |= BIT0;						// Buzzer is ON
+	__delay_cycles(10000);				// Delay 80ms, value = (time in second) * (DC0/8)
+	P2OUT &= ~BIT0;						// Buzzer is OFF
+		
 	standby:	
 	_BIS_SR(LPM3_bits + GIE);
 	while(1)
@@ -126,7 +136,15 @@ void main(void)
 				}	
 			}
 			else
-			{
+			{	
+				// Send notification
+				if (notice_send == 1)		
+				{
+					Read_all_RTC(myTime);
+					Print_RTC();
+					Print_UART("\n\r");
+					notice_send = 0;
+				}
 				// Buzzer OVER mode
 				if (counter < 6)					// Delay 150 ms, counter is 30ms per tick
 				{
@@ -224,18 +242,18 @@ __interrupt void Timer_A (void)
 	ADC10CTL0 |= ENC + ADC10SC;             	// Sampling and conversion start
 	ADC10CTL0 &= ~ENC;				   			// Disable ADC conversion
 	ADC10CTL0 &= ~ADC10ON;		        		// ADC10 off
-	if (ADC10MEM > 617)
-		tempRaw = 600;
-	else if (ADC10MEM > 542)
-		tempRaw = 1200;	
-	else if (ADC10MEM > 484)
-		tempRaw = 1800;
-	else if (ADC10MEM > 326)
-		tempRaw = 2400;
-	else if (ADC10MEM > 177)
+	if (ADC10MEM < 170)
+		tempRaw = 3600;
+	else if (ADC10MEM < 326)
 		tempRaw = 3000;	
+	else if (ADC10MEM < 476)
+		tempRaw = 2400;
+	else if (ADC10MEM < 675)
+		tempRaw = 1800;
+	else if (ADC10MEM < 821)
+		tempRaw = 1200;	
 	else
-		tempRaw = 3600;	
+		tempRaw = 600;	
 
 	if (t1 == tempRaw)		
 	{
@@ -334,6 +352,12 @@ __interrupt void PORT1_ISR(void)
 	CCTL0 |= CCIE;							// Enable capture/compare mode
 	CCR0 = 360;								// Change timer to 30ms period with CCR0 = 12000 x (time in second)
 	counter = 0;							// reset counter
+	Print_UART("Warning!! Gas is out...\n\r");
+	Print_UART("From: ");
+	Read_all_RTC(myTime);
+	Print_RTC();
+	Print_UART("To: ");
+	notice_send = 1;
 	_BIC_SR_IRQ(LPM3_bits);					// LPM off
 }
 
@@ -365,6 +389,10 @@ __interrupt void PORT2_ISR(void)
 		CCTL0 &= ~CCIE;						// Disable capture/compare mode
 		P2IE |= BIT3; 						// Start INT enable
 		P2IFG &= ~BIT4;         			// Clear interrupt Flag for next warning
+		
+		Read_all_RTC(myTime);
+		Print_RTC();
+		Print_UART("\n\r");
 	}	
 	
 }
@@ -376,19 +404,19 @@ void Print_RTC()
 	Print_UART(", ");
 	Print_UART(month_table[((myTime->month >> 4) * 10 + (myTime->month & 0x0F))]);
 	Print_UART(" ");
-	Send_Char((unsigned char)((myTime->date >> 4) + 0x30));
-	Send_Char((unsigned char)((myTime->date & 0x0F) + 0x30));
+	Send_Char((char)((myTime->date >> 4) + 0x30));
+	Send_Char((char)((myTime->date & 0x0F) + 0x30));
 	Print_UART(", 20");
-	Send_Char((unsigned char)((myTime->year >> 4) + 0x30));
-	Send_Char((unsigned char)((myTime->year & 0x0F) + 0x30));
+	Send_Char((char)((myTime->year >> 4) + 0x30));
+	Send_Char((char)((myTime->year & 0x0F) + 0x30));
 	Print_UART(" @");
-	Send_Char((unsigned char)((myTime->hours >> 4) + 0x30));
-	Send_Char((unsigned char)((myTime->hours & 0x0F) + 0x30));
+	Send_Char((char)((myTime->hours >> 4) + 0x30));
+	Send_Char((char)((myTime->hours & 0x0F) + 0x30));
 	Print_UART(":");
-	Send_Char((unsigned char)((myTime->minutes >> 4) + 0x30));
-	Send_Char((unsigned char)((myTime->minutes & 0x0F) + 0x30));
+	Send_Char((char)((myTime->minutes >> 4) + 0x30));
+	Send_Char((char)((myTime->minutes & 0x0F) + 0x30));
 	Print_UART(":");
-	Send_Char((unsigned char)((myTime->seconds >> 4) + 0x30));
-	Send_Char((unsigned char)((myTime->seconds & 0x0F) + 0x30));
+	Send_Char((char)((myTime->seconds >> 4) + 0x30));
+	Send_Char((char)((myTime->seconds & 0x0F) + 0x30));
 	Print_UART("\n\r");
 }

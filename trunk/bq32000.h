@@ -7,7 +7,6 @@ typedef struct time_struct
    unsigned char   date;
    unsigned char   month;
    unsigned char   year;
-   unsigned char   cal_cfg1;
 } RTC_TIME;
    
 /*ConfigI2C
@@ -44,5 +43,3 @@ void Write_RTC(RTC_TIME* time);
 * RETURN: None
 */
 void CAL_RTC(void);
-
-const char* month_name(int n);

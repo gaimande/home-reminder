@@ -10,7 +10,7 @@ void ConfigUART(void);
 * INPUT: Char to send
 * RETURN: None
 */
-void Send_Char(unsigned char chr);
+void Send_Char(char chr);
 
 /*Print_UART
 * Sends a string to the UART. Will wait if the UART is busy

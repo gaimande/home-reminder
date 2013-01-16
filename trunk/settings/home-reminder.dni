@@ -36,10 +36,10 @@ Control Register=0
 NextState0=0
 NextState1=0
 [Action Register]
-Break=0
+Break=1
 State Storage=1
 [DebugChecksum]
-Checksum=13715326
+Checksum=1222449618
 [CallStack]
 ShowArgs=0
 [Disassembly]
@@ -49,6 +49,13 @@ Fmt0={W}0:CCTL0	1	0
 Fmt1={W}0:UCB0RXBUF	4	0
 Fmt2={W}0:counter	3	0
 Fmt3={W}0:ias	5	0
+[CallStackLog]
+Enabled=0
+[DriverProfiling]
+Enabled=0
+Mode=0
+Graph=0
+Symbiont=0
 [Breakpoints]
 Count=0
 [FET]
@@ -81,10 +88,3 @@ LogFile=_ ""
 [Aliases]
 Count=0
 SuppressDialog=0
-[CallStackLog]
-Enabled=0
-[DriverProfiling]
-Enabled=0
-Mode=0
-Graph=0
-Symbiont=0
