@@ -8,15 +8,15 @@
     <outputs>
       <file>$PROJ_DIR$\bq32000.c</file>
       <file>$PROJ_DIR$\main.c</file>
-      <file>$PROJ_DIR$\Debug\Obj\main.r43</file>
       <file>$TOOLKIT_DIR$\inc\msp430g2553.h</file>
+      <file>$PROJ_DIR$\Debug\Obj\main.r43</file>
       <file>$PROJ_DIR$\uart_simple.c</file>
       <file>$PROJ_DIR$\Debug\Obj\main.pbi</file>
-      <file>$PROJ_DIR$\Debug\Obj\home-reminder.pbd</file>
-      <file>$PROJ_DIR$\Debug\Exe\home-reminder.d43</file>
-      <file>$TOOLKIT_DIR$\inc\in430.h</file>
-      <file>$PROJ_DIR$\Debug\Obj\uart_simple.r43</file>
       <file>$PROJ_DIR$\Debug\Obj\uart_simple.pbi</file>
+      <file>$PROJ_DIR$\Debug\Exe\home-reminder.d43</file>
+      <file>$PROJ_DIR$\Debug\Obj\home-reminder.pbd</file>
+      <file>$PROJ_DIR$\Debug\Obj\uart_simple.r43</file>
+      <file>$TOOLKIT_DIR$\inc\in430.h</file>
       <file>$TOOLKIT_DIR$\lib\dlib\dl430fn.r43</file>
       <file>$TOOLKIT_DIR$\inc\intrinsics.h</file>
       <file>$PROJ_DIR$\uart_simple.h</file>
@@ -40,11 +40,11 @@
       <inputs>
         <tool>
           <name>ICC430</name>
-          <file> 3 8 12 15</file>
+          <file> 2 10 12 15</file>
         </tool>
         <tool>
           <name>BICOMP</name>
-          <file> 3 8 12 15</file>
+          <file> 2 10 12 15</file>
         </tool>
       </inputs>
     </file>
@@ -53,7 +53,7 @@
       <outputs>
         <tool>
           <name>ICC430</name>
-          <file> 2</file>
+          <file> 3</file>
         </tool>
         <tool>
           <name>BICOMP</name>
@@ -63,11 +63,11 @@
       <inputs>
         <tool>
           <name>ICC430</name>
-          <file> 3 8 12 13 15</file>
+          <file> 2 10 12 13 15</file>
         </tool>
         <tool>
           <name>BICOMP</name>
-          <file> 3 8 12 13 15</file>
+          <file> 2 10 12 13 15</file>
         </tool>
       </inputs>
     </file>
@@ -80,26 +80,17 @@
         </tool>
         <tool>
           <name>BICOMP</name>
-          <file> 10</file>
+          <file> 6</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
           <name>ICC430</name>
-          <file> 3 8 12</file>
+          <file> 2 10 12</file>
         </tool>
         <tool>
           <name>BICOMP</name>
-          <file> 3 8 12</file>
-        </tool>
-      </inputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\Debug\Obj\home-reminder.pbd</name>
-      <inputs>
-        <tool>
-          <name>BILINK</name>
-          <file> 17 5 10</file>
+          <file> 2 10 12</file>
         </tool>
       </inputs>
     </file>
@@ -108,7 +99,16 @@
       <inputs>
         <tool>
           <name>XLINK</name>
-          <file> 14 16 2 9 11</file>
+          <file> 14 16 3 9 11</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\Debug\Obj\home-reminder.pbd</name>
+      <inputs>
+        <tool>
+          <name>BILINK</name>
+          <file> 17 5 6</file>
         </tool>
       </inputs>
     </file>
