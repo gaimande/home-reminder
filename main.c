@@ -15,7 +15,7 @@
 #endif
 
 volatile unsigned long t1, t2, tempRaw;
-unsigned char flag_timeout, flag_gas, counter, notice_send, index = 0;
+unsigned char flag_timeout = 0, flag_gas = 0, flag_run = 0, counter, notice_send, index = 0;
 unsigned char time_dat[7]={0x00,0x05,0x18,2,0x14,1,0x13};	// ss,min,hour,day,date,month,years
 unsigned char coun[8];
 
@@ -61,16 +61,19 @@ void main(void)
 	Print_UART("Thank you for chosing!\n\r");
 	Print_UART("-----------------------------\n\r");
 
-	// Set RTC to Tuesday, Jan 1, 2013 @11:19:00 at reset
 	myTime = (RTC_TIME*)malloc(sizeof(RTC_TIME));
-	myTime->seconds = 0;                  
-	myTime->minutes = 0x00;
-	myTime->hours = 0x12;
-	myTime->day = 3;             
-	myTime->date = 0x01;            
-	myTime->month = 0x01;             
-	myTime->year = 0x13;          
-	Write_RTC(myTime);
+	if(!(P2IN & BIT4))						// Press Stop at reset to restore RTC factory setting
+	{
+		// Set RTC to Tuesday, Jan 1, 2013 @11:19:00 at reset
+		myTime->seconds = 0;                  
+		myTime->minutes = 0x00;
+		myTime->hours = 0x12;
+		myTime->day = 3;             
+		myTime->date = 0x01;            
+		myTime->month = 0x01;             
+		myTime->year = 0x13;          
+		Write_RTC(myTime);
+	}
 	// Print time for the first use
 	Read_all_RTC(myTime);
 	Print_RTC();
@@ -79,14 +82,21 @@ void main(void)
 	// BEEP
 	P2OUT |= BIT0;						// Buzzer is ON
 	__delay_cycles(10000);				// Delay 80ms, value = (time in second) * (DC0/8)
-	P2OUT &= ~BIT0;						// Buzzer is OFF
-		
+	P2OUT &= ~BIT0;						// Buzzer is OFF	
+	
 	standby:	
-	_BIS_SR(LPM3_bits + GIE);
+	if ((flag_gas == 1) || (flag_timeout ==1) || (flag_run == 1))
+		_BIS_SR(LPM3_bits + GIE);		// In process mode, choose LPM3 to enable ACLK clock for timer
+	else
+	{
+		WDTCTL = WDTPW + WDTHOLD;           // Stop watchdog timer	
+		_BIS_SR(LPM4_bits + GIE);		// If in standby mode, choose LPM4 to minimum consumption
+	}	
 	while(1)
 	{		
 		if (flag_timeout == 1)
 		{
+			WDTCTL = WDTPW + WDTCNTCL + WDTSSEL; 		// Clear WDT
 			// Buzzer TIME mode
 			if (counter < 4)						// Delay 90 ms, counter is 30ms per tick
 			{
@@ -124,6 +134,7 @@ void main(void)
 		}
 		else if (flag_gas == 1)
 		{
+			WDTCTL = WDTPW + WDTCNTCL + WDTSSEL; 		// Clear WDT
 			P2IE &= ~BIT3; 							// Start INT disable
 			if(P1IN & BIT5)							// Keep warning til Gas dose not appear
 			{
@@ -161,14 +172,15 @@ void main(void)
 					counter = 0;
 			}
 		}
-		
 		goto standby;		
 	}		
 }
 
 void ConfigWDT(void)
 {
-	WDTCTL = WDTPW + WDTHOLD;                 	// Stop watchdog timer
+	WDTCTL = WDTPW + WDTCNTCL + WDTSSEL;        // Clear watchdog timer
+												// Clock Source from VLO in this project
+												// so WDT will reset MCU after 2^16 * 1/12000 ~ 5s
 }
 
 void ConfigClocks(void)
@@ -197,8 +209,8 @@ void ConfigLEDs(void)
 	P1IE |= BIT5;                           // Enable GAS interrupt
 	P1IES &= ~BIT5;                         // Low to High transition
 
-	P1IFG = 0;
 	P2IFG = 0;
+	P1IFG = 0;
 	
 	P2SEL = 0; 								// XIN and XOUT pins as GPIOs
 	P2DIR = ~(BIT3 + BIT4 + BIT5);		  	// Run, Stop and Fao buttons as inputs, other outputs
@@ -352,22 +364,25 @@ __interrupt void PORT1_ISR(void)
 	CCTL0 |= CCIE;							// Enable capture/compare mode
 	CCR0 = 360;								// Change timer to 30ms period with CCR0 = 12000 x (time in second)
 	counter = 0;							// reset counter
+	
 	Print_UART("Warning!! Gas is out...\n\r");
 	Print_UART("From: ");
 	Read_all_RTC(myTime);
 	Print_RTC();
 	Print_UART("To: ");
+	
 	notice_send = 1;
 	_BIC_SR_IRQ(LPM3_bits);					// LPM off
+	_BIC_SR_IRQ(LPM4_bits);					// LPM off
 }
 
 // Buttons ISR
 #pragma vector=PORT2_VECTOR
 __interrupt void PORT2_ISR(void)
 {    
-	
 	if ((P2IFG&BIT3) == BIT3)				// RUN button is pressed
 	{
+		flag_run = 1;
 		P1OUT |= BIT4;						// light_run ON
 		t1 = 0;
 		CCTL0 |= CCIE;						// Enable capture/compare mode
@@ -386,6 +401,7 @@ __interrupt void PORT2_ISR(void)
 		P2OUT &= ~BIT0;						// Buzzer is OFF
 		flag_gas = 0;
 		flag_timeout = 0;
+		flag_run = 0;
 		CCTL0 &= ~CCIE;						// Disable capture/compare mode
 		P2IE |= BIT3; 						// Start INT enable
 		P2IFG &= ~BIT4;         			// Clear interrupt Flag for next warning
@@ -394,7 +410,8 @@ __interrupt void PORT2_ISR(void)
 		Print_RTC();
 		Print_UART("\n\r");
 	}	
-	
+	_BIC_SR_IRQ(LPM3_bits);					// LPM off
+	_BIC_SR_IRQ(LPM4_bits);					// LPM off
 }
 
 void Print_RTC()
