@@ -9,6 +9,7 @@
 #include <msp430g2553.h>
 #include "uart_simple.h"
 #include "bq32000.h"
+
 #ifndef TIMER0_A1_VECTOR
 #define TIMER0_A1_VECTOR    TIMERA1_VECTOR
 #define TIMER0_A0_VECTOR    TIMERA0_VECTOR
@@ -36,7 +37,7 @@ static char* day_table[8]=
 void FaultRoutine(void);
 void ConfigWDT(void);
 void ConfigClocks(void);
-void ConfigLEDs(void);
+void ConfigIOs(void);
 void ConfigADC10(void);
 void ConfigTimerA2(void);
 void Warning(void);
@@ -44,10 +45,9 @@ void Print_RTC();
 
 void main(void)
 {
-	
 	ConfigWDT();
 	ConfigClocks();
-	ConfigLEDs();
+	ConfigIOs();
 	ConfigADC10();
 	ConfigTimerA2();
 	ConfigUART();
@@ -89,14 +89,13 @@ void main(void)
 		_BIS_SR(LPM3_bits + GIE);		// In process mode, choose LPM3 to enable ACLK clock for timer
 	else
 	{
-		WDTCTL = WDTPW + WDTHOLD;           // Stop watchdog timer	
+		WDTCTL = WDTPW + WDTHOLD;       // Stop watchdog timer	
 		_BIS_SR(LPM4_bits + GIE);		// If in standby mode, choose LPM4 to minimum consumption
 	}	
 	while(1)
 	{		
 		if (flag_timeout == 1)
 		{
-			WDTCTL = WDTPW + WDTCNTCL + WDTSSEL; 		// Clear WDT
 			// Buzzer TIME mode
 			if (counter < 4)						// Delay 90 ms, counter is 30ms per tick
 			{
@@ -134,7 +133,6 @@ void main(void)
 		}
 		else if (flag_gas == 1)
 		{
-			WDTCTL = WDTPW + WDTCNTCL + WDTSSEL; 		// Clear WDT
 			P2IE &= ~BIT3; 							// Start INT disable
 			if(P1IN & BIT5)							// Keep warning til Gas dose not appear
 			{
@@ -201,7 +199,7 @@ void FaultRoutine(void)
 	while(1); 			                    // TRAP
 }
 
-void ConfigLEDs(void)
+void ConfigIOs(void)
 {
 	P1DIR = ~(BIT0 + BIT5);					// ADC pin, MQ2 pin as inputs, other outputs
 	P1REN |= BIT0 + BIT5;                   // Pull-up resistor enable
@@ -280,16 +278,17 @@ __interrupt void Timer_A (void)
 	}
 	else
 	{
+		t1 = tempRaw;
+		t2 = t1;
+		
 		// BEEP
 		P2OUT |= BIT0;						// Buzzer is ON
 		__delay_cycles(10000);				// Delay 80ms, value = (time in second) * (DC0/8)
 		P2OUT &= ~BIT0;						// Buzzer is OFF
-		
-		t1 = tempRaw;
-		t2 = t1;
 	}		
 	P1OUT ^= BIT4; 				      		// Light_Run blink
 	exit_isr:
+	WDTCTL = WDTPW + WDTCNTCL + WDTSSEL; 	// Clear WDT
 }
 
 #pragma vector=USCIAB0RX_VECTOR
@@ -372,7 +371,6 @@ __interrupt void PORT1_ISR(void)
 	Print_UART("To: ");
 	
 	notice_send = 1;
-	_BIC_SR_IRQ(LPM3_bits);					// LPM off
 	_BIC_SR_IRQ(LPM4_bits);					// LPM off
 }
 
@@ -410,7 +408,6 @@ __interrupt void PORT2_ISR(void)
 		Print_RTC();
 		Print_UART("\n\r");
 	}	
-	_BIC_SR_IRQ(LPM3_bits);					// LPM off
 	_BIC_SR_IRQ(LPM4_bits);					// LPM off
 }
 

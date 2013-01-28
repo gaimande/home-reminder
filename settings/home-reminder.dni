@@ -64,8 +64,8 @@ Category=_ 0
 LoggingEnabled=_ 0
 LogFile=_ ""
 [Breakpoints]
-Bp0=_ "STD_CODE" "{$PROJ_DIR$\main.c}.361.2" 1 0 0 0 "" 0 ""
-Bp1=_ "STD_CODE" "{$PROJ_DIR$\main.c}.152.6" 0 0 0 0 "" 0 ""
+Bp0=_ "STD_CODE" "{$PROJ_DIR$\main.c}.363.2" 1 0 0 0 "" 0 ""
+Bp1=_ "STD_CODE" "{$PROJ_DIR$\main.c}.153.6" 0 0 0 0 "" 0 ""
 Bp2=_ "STD_CODE" "{$PROJ_DIR$\main.c}.48.2" 1 0 0 0 "" 0 ""
 Count=3
 [FET]
